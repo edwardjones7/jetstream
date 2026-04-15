@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default function Legacy() {
   const sectionRef = useRef<HTMLElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
   const wordmarkRef = useRef<HTMLDivElement>(null);
-  const [hover, setHover] = useState(false);
+  const ruleRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const path = pathRef.current;
@@ -27,6 +27,10 @@ export default function Legacy() {
         if (wordmarkRef.current) {
           wordmarkRef.current.style.opacity = String(Math.max(0, (p - 0.5) * 2));
           wordmarkRef.current.style.transform = `translateY(${(1 - p) * 30}px)`;
+        }
+        if (ruleRef.current) {
+          ruleRef.current.style.opacity = String(Math.max(0, (p - 0.5) * 2));
+          ruleRef.current.style.transform = `scaleX(${Math.max(0, (p - 0.5) * 2)})`;
         }
       },
     });
@@ -95,29 +99,18 @@ export default function Legacy() {
             FOR THE ONES WHO REFUSE THE GROUND.
           </div>
 
-          <button
-            onMouseEnter={() => setHover(true)}
-            onMouseLeave={() => setHover(false)}
-            className="group relative mono text-[11px] px-10 py-5 overflow-hidden transition-all duration-300"
+          <div
+            ref={ruleRef}
             style={{
-              border: '1px solid rgba(238,240,243,0.3)',
-              color: hover ? 'var(--void)' : 'var(--bone)',
-              background: hover ? 'var(--afterburn)' : 'transparent',
-              boxShadow: hover
-                ? '0 0 40px var(--afterburn), inset 0 0 20px rgba(255,255,255,0.2)'
-                : 'none',
+              width: 'clamp(120px, 22vw, 320px)',
+              height: '1px',
+              background: 'rgba(238,240,243,0.2)',
+              boxShadow: '0 0 12px rgba(238,240,243,0.25)',
+              opacity: 0,
+              transform: 'scaleX(0)',
+              transformOrigin: 'center',
             }}
-          >
-            <span className="relative z-10 flex items-center gap-4">
-              REQUEST A BRIEFING
-              <span
-                className="inline-block transition-transform duration-300"
-                style={{ transform: hover ? 'translateX(6px)' : 'translateX(0)' }}
-              >
-                →
-              </span>
-            </span>
-          </button>
+          />
 
           <div className="mono text-[9px] text-[var(--bone)]/30 mt-12">
             END OF TRANSMISSION · SCROLL COMPLETE

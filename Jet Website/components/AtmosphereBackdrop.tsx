@@ -53,7 +53,6 @@ export default function AtmosphereBackdrop() {
   const skyRef = useRef<HTMLDivElement>(null);
   const cloud1Ref = useRef<HTMLDivElement>(null);
   const cloud2Ref = useRef<HTMLDivElement>(null);
-  const cloud3Ref = useRef<HTMLDivElement>(null);
   const sunRef = useRef<HTMLDivElement>(null);
   const earthRef = useRef<HTMLDivElement>(null);
   const horizonRef = useRef<HTMLDivElement>(null);
@@ -142,16 +141,12 @@ export default function AtmosphereBackdrop() {
       })();
       const yShift = (mult: number) => `translate3d(0, ${(p - 0.32) * mult}vh, 0)`;
       if (cloud1Ref.current) {
-        cloud1Ref.current.style.opacity = String(cloudVis * 0.55);
-        cloud1Ref.current.style.transform = yShift(-180);
+        cloud1Ref.current.style.opacity = String(cloudVis * 0.7);
+        cloud1Ref.current.style.transform = yShift(-200);
       }
       if (cloud2Ref.current) {
-        cloud2Ref.current.style.opacity = String(cloudVis * 0.7);
-        cloud2Ref.current.style.transform = yShift(-300);
-      }
-      if (cloud3Ref.current) {
-        cloud3Ref.current.style.opacity = String(cloudVis * 0.85);
-        cloud3Ref.current.style.transform = yShift(-440);
+        cloud2Ref.current.style.opacity = String(cloudVis * 0.5);
+        cloud2Ref.current.style.transform = yShift(-340);
       }
 
       // Horizon glow at takeoff
@@ -205,64 +200,39 @@ export default function AtmosphereBackdrop() {
         style={{ background: 'linear-gradient(to bottom, rgb(4,6,12), rgb(10,12,18))' }}
       />
 
-      {/* Horizon ember (takeoff warmth) */}
+      {/* Horizon ember (takeoff warmth) — soft gradient, no blend mode, no blur */}
       <div
         ref={horizonRef}
         className="pointer-events-none absolute left-[-15%] right-[-15%] bottom-[-10vh] h-[55vh]"
         style={{
           opacity: 0,
           background:
-            'radial-gradient(ellipse 60% 100% at 50% 100%, rgba(255,120,40,0.45) 0%, rgba(255,80,30,0.18) 35%, transparent 65%)',
-          mixBlendMode: 'screen',
-          filter: 'blur(8px)',
+            'radial-gradient(ellipse 60% 100% at 50% 100%, rgba(255,120,40,0.55) 0%, rgba(255,80,30,0.22) 35%, transparent 70%)',
           willChange: 'opacity',
         }}
       />
 
-      {/* Cloud layer 3 — highest, biggest */}
-      <div
-        ref={cloud3Ref}
-        className="absolute left-[-10%] right-[-10%] top-[40%] h-[80vh]"
-        style={{
-          backgroundImage: `url(${MEDIA.clouds3})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          opacity: 0,
-          mixBlendMode: 'screen',
-          filter: 'blur(2px) brightness(1.1)',
-          maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 90%)',
-          WebkitMaskImage: 'radial-gradient(ellipse at center, black 30%, transparent 90%)',
-          willChange: 'transform, opacity',
-        }}
-      />
-      {/* Cloud layer 2 */}
+      {/* Cloud layer 2 — lighter compositing budget. No mix-blend-mode, no mask, no filter blur. */}
       <div
         ref={cloud2Ref}
-        className="absolute left-[-10%] right-[-10%] top-[55%] h-[60vh]"
+        className="absolute left-[-5%] right-[-5%] top-[48%] h-[70vh]"
         style={{
-          backgroundImage: `url(${MEDIA.clouds2})`,
+          backgroundImage: `radial-gradient(ellipse 70% 70% at center, rgba(255,255,255,0) 50%, transparent 95%), url(${MEDIA.clouds2})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0,
-          mixBlendMode: 'screen',
-          filter: 'blur(1px) brightness(1.05)',
-          maskImage: 'radial-gradient(ellipse at center, black 35%, transparent 90%)',
-          WebkitMaskImage: 'radial-gradient(ellipse at center, black 35%, transparent 90%)',
           willChange: 'transform, opacity',
         }}
       />
       {/* Cloud layer 1 — lowest, sharpest */}
       <div
         ref={cloud1Ref}
-        className="absolute left-[-10%] right-[-10%] top-[68%] h-[55vh]"
+        className="absolute left-[-5%] right-[-5%] top-[64%] h-[55vh]"
         style={{
           backgroundImage: `url(${MEDIA.clouds1})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0,
-          mixBlendMode: 'screen',
-          maskImage: 'radial-gradient(ellipse at center, black 40%, transparent 90%)',
-          WebkitMaskImage: 'radial-gradient(ellipse at center, black 40%, transparent 90%)',
           willChange: 'transform, opacity',
         }}
       />
@@ -270,7 +240,7 @@ export default function AtmosphereBackdrop() {
       {/* Stars */}
       <canvas ref={starCanvasRef} className="absolute inset-0" />
 
-      {/* Sun flare on cruise altitude */}
+      {/* Sun flare on cruise altitude — gradient only */}
       <div
         ref={sunRef}
         className="pointer-events-none absolute left-1/2 -translate-x-1/2"
@@ -280,9 +250,7 @@ export default function AtmosphereBackdrop() {
           height: '40vh',
           opacity: 0,
           background:
-            'radial-gradient(ellipse 50% 80% at center, rgba(255,210,150,0.6) 0%, rgba(255,150,80,0.22) 28%, transparent 62%)',
-          mixBlendMode: 'screen',
-          filter: 'blur(20px)',
+            'radial-gradient(ellipse 50% 80% at center, rgba(255,210,150,0.7) 0%, rgba(255,150,80,0.28) 28%, transparent 62%)',
           willChange: 'transform, opacity',
         }}
       />

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MEDIA } from '@/lib/media';
+import { subscribeScrollProgress } from '@/lib/scrollProgress';
 
 const TICKER = [
   'ELEMENT 07 AIRBORNE · ORBIT ALPHA · FUEL STATE 96%',
@@ -86,11 +87,49 @@ export default function Hero() {
       },
     });
 
+    // Pause video while scrolling and while Hero is offscreen — video decode
+    // is the dominant scroll-frame cost. Resume after 150ms scroll idle + in view.
+    let isScrolling = false;
+    let inView = true;
+    let idleTimer: number | null = null;
+
+    const sync = () => {
+      const v = videoRef.current;
+      if (!v) return;
+      if (inView && !isScrolling) {
+        if (v.paused) v.play().catch(() => {});
+      } else if (!v.paused) {
+        v.pause();
+      }
+    };
+
+    const unsubScroll = subscribeScrollProgress(() => {
+      isScrolling = true;
+      sync();
+      if (idleTimer !== null) window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => {
+        isScrolling = false;
+        sync();
+      }, 150);
+    });
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        inView = entry.isIntersecting;
+        sync();
+      },
+      { threshold: 0 }
+    );
+    if (sectionRef.current) io.observe(sectionRef.current);
+
     return () => {
       clearInterval(clockI);
       clearInterval(typeI);
       tl.kill();
       st.kill();
+      unsubScroll();
+      io.disconnect();
+      if (idleTimer !== null) window.clearTimeout(idleTimer);
     };
   }, []);
 
@@ -107,20 +146,18 @@ export default function Hero() {
       id="hero"
       className="relative h-screen w-full overflow-hidden"
     >
-      {/* Backdrop video (image poster fallback) */}
+      {/* Backdrop video — no CSS filter on the video layer (forces CPU composite of video frames).
+          The dark/contrast look is applied by the separate overlay div below instead. */}
       <div
         ref={bgRef}
         className="absolute inset-0 bg-black"
         style={{
-          filter: 'brightness(0.75) contrast(1.08) saturate(0.9)',
-          willChange: 'transform, opacity',
-          transform: 'translateZ(0)',
+          willChange: 'opacity',
         }}
       >
         <video
           ref={videoRef}
           className="h-full w-full object-cover"
-          style={{ willChange: 'transform', transform: 'translateZ(0)' }}
           src={MEDIA.heroVideo}
           poster={MEDIA.hero}
           autoPlay
@@ -130,6 +167,14 @@ export default function Hero() {
           preload="auto"
         />
       </div>
+      {/* Darken + grade overlay (replaces filter on video layer) */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.28) 100%)',
+        }}
+      />
 
       {/* Color grade + vignette */}
       <div
@@ -200,7 +245,7 @@ export default function Hero() {
           className="display text-center text-[var(--bone)] select-none"
           style={{
             fontSize: 'clamp(4.5rem, 17vw, 20rem)',
-            textShadow: '0 4px 60px rgba(0,0,0,0.7)',
+            textShadow: '0 2px 18px rgba(0,0,0,0.7)',
           }}
         >
           <span ref={ownRef} className="block overflow-hidden">

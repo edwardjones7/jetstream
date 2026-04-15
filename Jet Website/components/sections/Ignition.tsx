@@ -43,23 +43,36 @@ export default function Ignition() {
       },
     });
 
-    // Velocity shake
+    // Velocity shake — only run RAF while section is in viewport
     let raf = 0;
+    let visible = false;
     const shake = () => {
       const v = velocityRef.current;
       const amp = v * 8;
-      if (stickyRef.current) {
+      if (stickyRef.current && amp > 0.05) {
         const x = (Math.random() - 0.5) * amp;
         const y = (Math.random() - 0.5) * amp;
         stickyRef.current.style.transform = `translate(${x}px,${y}px)`;
+      } else if (stickyRef.current) {
+        stickyRef.current.style.transform = '';
       }
       raf = requestAnimationFrame(shake);
     };
-    raf = requestAnimationFrame(shake);
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        const wasVisible = visible;
+        visible = entry.isIntersecting;
+        if (visible && !wasVisible) raf = requestAnimationFrame(shake);
+        else if (!visible && wasVisible) cancelAnimationFrame(raf);
+      },
+      { threshold: 0 }
+    );
+    if (sectionRef.current) io.observe(sectionRef.current);
 
     return () => {
       st.kill();
       cancelAnimationFrame(raf);
+      io.disconnect();
     };
   }, [velocityRef]);
 

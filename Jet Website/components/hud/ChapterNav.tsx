@@ -4,9 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { subscribeScrollProgress } from '@/lib/scrollProgress';
 
 const CHAPTERS = [
-  { id: 'hero', label: 'IGNITION' },
-  { id: 'ignition', label: 'ROLLOUT' },
-  { id: 'ascent', label: 'ASCENT' },
+  { id: 'takeoff', label: 'TAKEOFF' },
   { id: 'fleet', label: 'FLEET' },
   { id: 'anatomy', label: 'ANATOMY' },
   { id: 'mach', label: 'MACH' },
