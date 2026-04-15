@@ -57,7 +57,7 @@ export default function Hero() {
     const skyChars = skyRef.current?.querySelectorAll('span') ?? [];
 
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-    tl.from(bgRef.current, { scale: 1.15, opacity: 0, duration: 2.4, ease: 'power2.out' }, 0)
+    tl.from(bgRef.current, { scale: 1.15, duration: 2.4, ease: 'power2.out' }, 0)
       .from(ownChars, { y: 100, opacity: 0, stagger: 0.04, duration: 0.9 }, 0.4)
       .from(skyChars, { y: 100, opacity: 0, stagger: 0.04, duration: 0.9 }, 0.7)
       .from(leftPanelRef.current, { x: -40, opacity: 0, duration: 1 }, 1.0)
@@ -119,7 +119,7 @@ export default function Hero() {
       {/* Backdrop video (image poster fallback) */}
       <div
         ref={bgRef}
-        className="absolute inset-0"
+        className="absolute inset-0 bg-black"
         style={{
           filter: 'brightness(0.62) contrast(1.15) saturate(0.85)',
         }}
