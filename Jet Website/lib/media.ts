@@ -22,6 +22,6 @@ export const MEDIA = {
   mach:      U('1516738901171-8eb4fc13bd20'),   // jet / speed
   apex:      U('1581922819941-6ab31ab79afc'),   // earth / space
   contrail:  U('1551986782-d0169b3f8fa7'),      // atmospheric
-  // B-52 intercept over South China Sea, public domain USAF (Wikimedia CDN, CORS-open, 480p VP9, 2.6MB / 39s)
-  heroVideo: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b7/B52interceptSouthChinaSea.webm/B52interceptSouthChinaSea.webm.480p.vp9.webm',
+  // Local hero footage, served from /public
+  heroVideo: '/jet.mp4',
 } as const;

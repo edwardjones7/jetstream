@@ -121,7 +121,7 @@ export default function Hero() {
         ref={bgRef}
         className="absolute inset-0"
         style={{
-          filter: 'brightness(0.7) contrast(1.1) saturate(0.9)',
+          filter: 'brightness(0.62) contrast(1.15) saturate(0.85)',
         }}
       >
         <video
@@ -134,12 +134,21 @@ export default function Hero() {
           muted
           playsInline
           preload="auto"
-          onLoadedData={() => console.log('[hero video] loadeddata')}
-          onCanPlay={() => console.log('[hero video] canplay')}
-          onPlay={() => console.log('[hero video] play')}
-          onError={(e) => console.error('[hero video] error', (e.target as HTMLVideoElement).error)}
+          style={{ opacity: 0, transition: 'opacity 1.2s ease-out' }}
+          onLoadedData={(e) => {
+            (e.currentTarget as HTMLVideoElement).style.opacity = '1';
+          }}
         />
       </div>
+
+      {/* Atmospheric haze pulled from the footage — subtle blue-cyan wash */}
+      <div
+        className="pointer-events-none absolute inset-0 mix-blend-soft-light"
+        style={{
+          background:
+            'radial-gradient(ellipse at 50% 40%, rgba(94,200,255,0.18) 0%, transparent 55%), linear-gradient(180deg, rgba(94,200,255,0.05) 0%, transparent 50%, rgba(255,91,20,0.08) 100%)',
+        }}
+      />
 
       {/* Color grade + vignette */}
       <div
