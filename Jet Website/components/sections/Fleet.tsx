@@ -112,7 +112,7 @@ export default function Fleet() {
     <section
       ref={sectionRef}
       id="fleet"
-      className="relative h-screen w-full overflow-hidden bg-black"
+      className="relative h-screen w-full overflow-hidden"
     >
       <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 mono text-[10px] text-[var(--bone)]/50 flex items-center gap-4">
         <span className="h-px w-10 bg-[var(--bone)]/30" />
@@ -132,19 +132,21 @@ export default function Fleet() {
             key={jet.name}
             className="shrink-0 w-[100vw] h-full relative flex items-center"
           >
-            {/* Backdrop */}
+            {/* Backdrop — slightly transparent so global atmosphere shows at edges */}
             <div
               className="absolute inset-0 bg-cover bg-center"
               style={{
                 backgroundImage: `url(${jet.img})`,
-                filter: 'brightness(0.35) saturate(0.9) contrast(1.15)',
+                filter: 'brightness(0.42) saturate(0.95) contrast(1.15)',
+                maskImage: 'radial-gradient(ellipse 75% 90% at center, black 35%, transparent 95%)',
+                WebkitMaskImage: 'radial-gradient(ellipse 75% 90% at center, black 35%, transparent 95%)',
               }}
             />
             {/* Tint overlay */}
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
-                background: `radial-gradient(ellipse at center, ${jet.tint}18 0%, transparent 60%), linear-gradient(90deg, rgba(0,0,0,0.7) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.7) 100%)`,
+                background: `radial-gradient(ellipse at center, ${jet.tint}22 0%, transparent 60%), linear-gradient(90deg, rgba(0,0,0,0.55) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.55) 100%)`,
               }}
             />
 

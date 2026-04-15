@@ -28,6 +28,12 @@ body {
   overscroll-behavior: none;
 }
 
+/* Sections sit above the global AtmosphereBackdrop (z-0). */
+main {
+  position: relative;
+  z-index: 10;
+}
+
 ::selection {
   background: var(--afterburn);
   color: var(--void);

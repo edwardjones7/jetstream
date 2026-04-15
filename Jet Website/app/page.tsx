@@ -9,7 +9,7 @@ import Legacy from '@/components/sections/Legacy';
 
 export default function Home() {
   return (
-    <main className="relative">
+    <main className="relative z-10">
       <Hero />
       <Ignition />
       <Ascent />

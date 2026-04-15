@@ -39,32 +39,8 @@ export default function Legacy() {
       ref={sectionRef}
       id="legacy"
       className="relative h-[150vh] w-full overflow-hidden"
-      style={{
-        background:
-          'linear-gradient(to bottom, #020512 0%, #050608 60%, #000000 100%)',
-      }}
     >
       <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
-        {/* Faint starfield */}
-        <div className="pointer-events-none absolute inset-0 opacity-40">
-          {Array.from({ length: 80 }).map((_, i) => {
-            const seed = i * 2.414;
-            return (
-              <div
-                key={i}
-                className="absolute rounded-full bg-white"
-                style={{
-                  top: `${(seed * 29) % 100}%`,
-                  left: `${(seed * 83) % 100}%`,
-                  width: `${((seed * 11) % 1.8) + 0.3}px`,
-                  height: `${((seed * 11) % 1.8) + 0.3}px`,
-                  opacity: ((seed * 7) % 0.6) + 0.2,
-                }}
-              />
-            );
-          })}
-        </div>
-
         {/* Contrail path drawing */}
         <svg
           viewBox="0 0 1200 700"
@@ -108,6 +84,7 @@ export default function Legacy() {
             style={{
               fontSize: 'clamp(3rem, 11vw, 12rem)',
               lineHeight: 0.85,
+              textShadow: '0 4px 80px rgba(0,0,0,0.6)',
             }}
           >
             OWN THE SKY.

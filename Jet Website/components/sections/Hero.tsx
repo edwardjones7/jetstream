@@ -66,16 +66,7 @@ export default function Hero() {
       .from(reticleRef.current, { scale: 1.4, opacity: 0, duration: 1.4, ease: 'power4.out' }, 1.1)
       .from(subtitleRef.current, { opacity: 0, duration: 0.8 }, 1.3);
 
-    // Infinite Ken Burns on backdrop
-    gsap.to(bgRef.current, {
-      scale: 1.08,
-      duration: 18,
-      ease: 'sine.inOut',
-      yoyo: true,
-      repeat: -1,
-    });
-
-    // Scroll dolly-zoom — backdrop pushes in further, panels slide out
+    // Scroll — opacity fade on backdrop (compositor-only), panels slide out
     const st = ScrollTrigger.create({
       trigger: sectionRef.current,
       start: 'top top',
@@ -84,7 +75,7 @@ export default function Hero() {
       onUpdate: (self) => {
         const p = self.progress;
         if (bgRef.current) {
-          bgRef.current.style.filter = `blur(${p * 4}px) brightness(${1 - p * 0.3})`;
+          bgRef.current.style.opacity = String(1 - p * 0.55);
         }
         if (leftPanelRef.current) leftPanelRef.current.style.transform = `translateX(${-p * 80}px)`;
         if (rightPanelRef.current) rightPanelRef.current.style.transform = `translateX(${p * 80}px)`;
@@ -121,12 +112,15 @@ export default function Hero() {
         ref={bgRef}
         className="absolute inset-0 bg-black"
         style={{
-          filter: 'brightness(0.62) contrast(1.15) saturate(0.85)',
+          filter: 'brightness(0.75) contrast(1.08) saturate(0.9)',
+          willChange: 'transform, opacity',
+          transform: 'translateZ(0)',
         }}
       >
         <video
           ref={videoRef}
           className="h-full w-full object-cover"
+          style={{ willChange: 'transform', transform: 'translateZ(0)' }}
           src={MEDIA.heroVideo}
           poster={MEDIA.hero}
           autoPlay
@@ -136,15 +130,6 @@ export default function Hero() {
           preload="auto"
         />
       </div>
-
-      {/* Atmospheric haze pulled from the footage — subtle blue-cyan wash */}
-      <div
-        className="pointer-events-none absolute inset-0 mix-blend-soft-light"
-        style={{
-          background:
-            'radial-gradient(ellipse at 50% 40%, rgba(94,200,255,0.18) 0%, transparent 55%), linear-gradient(180deg, rgba(94,200,255,0.05) 0%, transparent 50%, rgba(255,91,20,0.08) 100%)',
-        }}
-      />
 
       {/* Color grade + vignette */}
       <div

@@ -67,7 +67,7 @@ export default function Ignition() {
     <section
       ref={sectionRef}
       id="ignition"
-      className="relative h-[200vh] w-full overflow-hidden bg-black"
+      className="relative h-[200vh] w-full overflow-hidden"
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden">
         {/* Backdrop */}
@@ -84,14 +84,14 @@ export default function Ignition() {
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              'radial-gradient(ellipse at center, rgba(255,91,20,0.28) 0%, rgba(100,30,10,0.15) 40%, rgba(0,0,0,0.85) 100%)',
+              'radial-gradient(ellipse at center, rgba(255,91,20,0.32) 0%, rgba(100,30,10,0.18) 40%, transparent 75%)',
             mixBlendMode: 'screen',
           }}
         />
         <div
           className="pointer-events-none absolute inset-0"
           style={{
-            background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.85) 100%)',
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.55) 100%)',
           }}
         />
 

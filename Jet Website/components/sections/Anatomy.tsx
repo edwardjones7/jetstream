@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MEDIA } from '@/lib/media';
 
 type Part = {
   id: string;
   label: string;
   code: string;
-  // hotspot coordinates over the SVG viewBox 0 0 200 300
   x: number;
   y: number;
   desc: string;
@@ -108,310 +108,334 @@ const PARTS: Part[] = [
   },
 ];
 
+// Each part owns 1/N of the scroll. Visibility fades in/out around the center.
+const N = PARTS.length;
+const visFor = (i: number, p: number) => {
+  const center = (i + 0.5) / N;
+  const half = 0.5 / N;
+  const d = Math.abs(p - center);
+  if (d <= half * 0.6) return 1;
+  if (d <= half * 1.4) return 1 - (d - half * 0.6) / (half * 0.8);
+  return 0;
+};
+const indexFor = (p: number) => Math.min(N - 1, Math.max(0, Math.floor(p * N)));
+
 export default function Anatomy() {
-  const [active, setActive] = useState<string | null>(null);
-  const activePart = PARTS.find((p) => p.id === active) ?? null;
+  const sectionRef = useRef<HTMLElement>(null);
+  const stickyRef = useRef<HTMLDivElement>(null);
+  const counterRef = useRef<HTMLSpanElement>(null);
+  const counterLabelRef = useRef<HTMLSpanElement>(null);
+  const indexItemRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const indexBarRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const detailRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const hotspotInnerRefs = useRef<Array<SVGCircleElement | null>>([]);
+  const hotspotOuterRefs = useRef<Array<SVGCircleElement | null>>([]);
+  const hotspotLineRefs = useRef<Array<SVGLineElement | null>>([]);
+  const labelRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const st = ScrollTrigger.create({
+      trigger: sectionRef.current,
+      start: 'top top',
+      end: 'bottom bottom',
+      scrub: 0.6,
+      onUpdate: (self) => {
+        const p = self.progress;
+        const active = indexFor(p);
+
+        if (counterRef.current) {
+          counterRef.current.textContent = String(active + 1).padStart(2, '0');
+        }
+        if (counterLabelRef.current) {
+          counterLabelRef.current.textContent = PARTS[active].label;
+        }
+        if (progressBarRef.current) {
+          progressBarRef.current.style.width = `${p * 100}%`;
+        }
+
+        for (let i = 0; i < N; i++) {
+          const v = visFor(i, p);
+          // Detail panel
+          const d = detailRefs.current[i];
+          if (d) {
+            d.style.opacity = String(v);
+            d.style.transform = `translateY(${(1 - v) * 18}px)`;
+            d.style.pointerEvents = v > 0.5 ? 'auto' : 'none';
+          }
+          // Index bar (left)
+          const bar = indexBarRefs.current[i];
+          if (bar) bar.style.width = `${4 + v * 56}px`;
+          const item = indexItemRefs.current[i];
+          if (item) {
+            item.style.color = v > 0.5 ? 'var(--bone)' : 'rgba(238,240,243,0.35)';
+            item.style.opacity = String(0.55 + v * 0.45);
+          }
+          // Hotspots on diagram
+          const ho = hotspotOuterRefs.current[i];
+          const hi = hotspotInnerRefs.current[i];
+          const hl = hotspotLineRefs.current[i];
+          const hLabel = labelRefs.current[i];
+          if (ho) {
+            ho.setAttribute('r', String(5 + v * 9));
+            ho.setAttribute('opacity', String(0.25 + v * 0.7));
+            ho.setAttribute('stroke', v > 0.5 ? 'var(--afterburn)' : 'var(--mach)');
+          }
+          if (hi) {
+            hi.setAttribute('r', String(1.6 + v * 1.4));
+            hi.setAttribute('fill', v > 0.5 ? 'var(--afterburn)' : 'var(--mach)');
+          }
+          if (hl) {
+            hl.setAttribute('opacity', String(0.2 + v * 0.6));
+            hl.setAttribute('stroke', v > 0.5 ? 'var(--afterburn)' : 'var(--mach)');
+          }
+          if (hLabel) {
+            hLabel.style.color = v > 0.5 ? 'var(--afterburn)' : 'rgba(238,240,243,0.55)';
+            hLabel.style.opacity = String(0.5 + v * 0.5);
+          }
+        }
+      },
+    });
+
+    return () => st.kill();
+  }, []);
 
   return (
     <section
+      ref={sectionRef}
       id="anatomy"
-      className="relative min-h-screen w-full overflow-hidden py-32"
-      style={{
-        background:
-          'linear-gradient(to bottom, #020306 0%, #050810 40%, #030508 100%)',
-      }}
+      className="relative w-full"
+      style={{ height: `${N * 100}vh` }}
     >
-      {/* Grid background */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.15]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(94,200,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(94,200,255,0.2) 1px, transparent 1px)',
-          backgroundSize: '60px 60px',
-          maskImage:
-            'radial-gradient(ellipse at center, black 30%, transparent 75%)',
-          WebkitMaskImage:
-            'radial-gradient(ellipse at center, black 30%, transparent 75%)',
-        }}
-      />
+      <div ref={stickyRef} className="sticky top-0 h-screen w-full overflow-hidden">
+        {/* Subtle hairline grid — blueprint vibe, very low intensity */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(94,200,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(94,200,255,1) 1px, transparent 1px)',
+            backgroundSize: '80px 80px',
+            maskImage: 'radial-gradient(ellipse at center, black 35%, transparent 80%)',
+            WebkitMaskImage: 'radial-gradient(ellipse at center, black 35%, transparent 80%)',
+          }}
+        />
 
-      {/* Section heading */}
-      <div className="relative z-10 max-w-[1400px] mx-auto px-[90px] mb-16">
-        <div className="mono text-[10px] text-[var(--bone)]/40 flex items-center gap-4 mb-6">
+        {/* Section header — top bar */}
+        <div className="absolute top-[6%] left-[90px] right-[90px] z-10 flex items-center gap-6 mono text-[10px] text-[var(--bone)]/55">
           <span className="h-px w-10 bg-[var(--bone)]/30" />
-          <span>V — ANATOMY / INTERACTIVE</span>
+          <span>V — ANATOMY</span>
+          <span className="text-[var(--mach)]">SCROLL TO EXAMINE</span>
           <span className="h-px flex-1 bg-[var(--bone)]/10" />
-          <span className="text-[var(--mach)]">CLICK A SYSTEM →</span>
+          <span className="tabular-nums text-[var(--afterburn)] text-[12px]">
+            <span ref={counterRef}>01</span>
+            <span className="text-[var(--bone)]/30"> / {String(N).padStart(2, '0')}</span>
+          </span>
+          <span className="text-[var(--bone)]/65" ref={counterLabelRef}>{PARTS[0].label}</span>
         </div>
-        <h2
-          className="display text-[var(--bone)]"
-          style={{ fontSize: 'clamp(2.5rem, 6vw, 6rem)', lineHeight: 0.9 }}
-        >
-          EVERY <span style={{ color: 'var(--afterburn)' }}>BOLT.</span><br />
-          EVERY <span style={{ color: 'var(--mach)' }}>DECISION.</span>
-        </h2>
-      </div>
 
-      {/* Content */}
-      <div className="relative z-10 max-w-[1400px] mx-auto px-[90px] grid grid-cols-[1fr_1.4fr_1fr] gap-10 items-start">
-        {/* LEFT: Part list */}
-        <div className="space-y-2">
-          <div className="mono text-[9px] text-[var(--bone)]/40 mb-4">SYSTEM INDEX</div>
-          {PARTS.map((p, i) => {
-            const isActive = active === p.id;
-            return (
-              <button
+        {/* Bottom progress bar through the systems */}
+        <div className="absolute bottom-[5%] left-[90px] right-[90px] z-10 flex items-center gap-3 mono text-[9px] text-[var(--bone)]/45">
+          <span>SYS 01</span>
+          <div className="flex-1 h-px bg-white/10 relative overflow-hidden">
+            <div
+              ref={progressBarRef}
+              className="absolute inset-y-0 left-0"
+              style={{
+                width: '0%',
+                background: 'linear-gradient(90deg, var(--mach), var(--afterburn))',
+              }}
+            />
+          </div>
+          <span>SYS {String(N).padStart(2, '0')}</span>
+        </div>
+
+        {/* Three-column body */}
+        <div className="absolute inset-0 grid grid-cols-[1fr_1.4fr_1.2fr] gap-10 items-center px-[90px]">
+          {/* LEFT: System index */}
+          <div className="space-y-3">
+            <div className="mono text-[9px] text-[var(--bone)]/40 mb-4">SYSTEM INDEX</div>
+            {PARTS.map((p, i) => (
+              <div
                 key={p.id}
-                onClick={() => setActive(isActive ? null : p.id)}
-                className="w-full text-left group flex items-center gap-3 py-3 border-b border-white/5 transition-all"
-                style={{
-                  background: isActive ? 'rgba(255,91,20,0.08)' : 'transparent',
-                  paddingLeft: isActive ? '12px' : '0px',
-                  borderColor: isActive ? 'var(--afterburn)' : 'rgba(255,255,255,0.05)',
-                }}
+                ref={(el) => { indexItemRefs.current[i] = el; }}
+                className="flex items-center gap-3 mono text-[10px] py-1.5"
+                style={{ color: 'rgba(238,240,243,0.35)', opacity: 0.55 }}
               >
-                <span
-                  className="mono text-[9px] tabular-nums w-8"
-                  style={{ color: isActive ? 'var(--afterburn)' : 'rgba(238,240,243,0.3)' }}
-                >
+                <span className="tabular-nums text-[9px] w-7 text-[var(--bone)]/35">
                   {String(i + 1).padStart(2, '0')}
                 </span>
+                <div
+                  ref={(el) => { indexBarRefs.current[i] = el; }}
+                  className="h-px bg-[var(--afterburn)]"
+                  style={{ width: '4px', willChange: 'width' }}
+                />
                 <div className="flex-1">
-                  <div className="mono text-[10px] tracking-[0.2em]"
-                       style={{ color: isActive ? 'var(--bone)' : 'rgba(238,240,243,0.6)' }}>
-                    {p.label}
-                  </div>
-                  <div className="mono text-[9px] text-[var(--bone)]/40 mt-0.5">{p.code}</div>
+                  <div className="tracking-[0.18em]">{p.label}</div>
+                  <div className="text-[8px] text-[var(--bone)]/35 mt-0.5">{p.code}</div>
                 </div>
-                <span
-                  className="mono text-[10px] transition-transform"
-                  style={{
-                    color: isActive ? 'var(--afterburn)' : 'rgba(238,240,243,0.3)',
-                    transform: isActive ? 'translateX(4px)' : 'translateX(0)',
-                  }}
-                >
-                  →
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* CENTER: Diagram with hotspots */}
-        <div className="relative aspect-[2/3] w-full">
-          {/* Halo */}
-          <div
-            className="absolute inset-[-10%] pointer-events-none"
-            style={{
-              background:
-                'radial-gradient(ellipse at center, rgba(94,200,255,0.15) 0%, transparent 60%)',
-              filter: 'blur(20px)',
-            }}
-          />
-
-          <svg
-            viewBox="0 0 200 300"
-            className="relative w-full h-full"
-          >
-            <defs>
-              <linearGradient id="anat-body" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#1d222b" />
-                <stop offset="50%" stopColor="#0d1015" />
-                <stop offset="100%" stopColor="#05070a" />
-              </linearGradient>
-            </defs>
-
-            {/* Airframe */}
-            <path
-              d="M 100 4
-                 L 108 38 L 115 70 L 135 130 L 190 235 L 190 248
-                 L 125 220 L 128 272 L 142 288 L 142 294
-                 L 100 278 L 58 294 L 58 288 L 72 272 L 75 220
-                 L 10 248 L 10 235 L 65 130 L 85 70 L 92 38 Z"
-              fill="url(#anat-body)"
-              stroke="rgba(94,200,255,0.3)"
-              strokeWidth="0.5"
-            />
-
-            {/* Cockpit */}
-            <path d="M 100 32 L 105 56 L 100 78 L 95 56 Z" fill="rgba(94,200,255,0.25)" />
-
-            {/* Centerline */}
-            <line x1="100" y1="4" x2="100" y2="278" stroke="rgba(94,200,255,0.15)" strokeDasharray="2 2" strokeWidth="0.4" />
-
-            {/* Dimension ticks */}
-            <g className="mono" fontSize="3.2" fill="rgba(94,200,255,0.45)">
-              <line x1="3" y1="4" x2="3" y2="278" stroke="rgba(94,200,255,0.2)" strokeWidth="0.3" />
-              <text x="4.5" y="12">0.0</text>
-              <text x="4.5" y="100">5.2M</text>
-              <text x="4.5" y="200">12.8M</text>
-              <text x="4.5" y="275">19.7M</text>
-            </g>
-
-            {/* Hotspots */}
-            {PARTS.map((p) => {
-              const isActive = active === p.id;
-              return (
-                <g
-                  key={p.id}
-                  onClick={() => setActive(isActive ? null : p.id)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {/* Outer pulse ring */}
-                  <circle
-                    cx={p.x}
-                    cy={p.y}
-                    r={isActive ? 12 : 6}
-                    fill="none"
-                    stroke={isActive ? 'var(--afterburn)' : 'var(--mach)'}
-                    strokeWidth="0.8"
-                    opacity={isActive ? 0.8 : 0.5}
-                  >
-                    {!isActive && (
-                      <animate attributeName="r" values="6;10;6" dur="2.4s" repeatCount="indefinite" />
-                    )}
-                    {!isActive && (
-                      <animate attributeName="opacity" values="0.5;0;0.5" dur="2.4s" repeatCount="indefinite" />
-                    )}
-                  </circle>
-                  {/* Inner dot */}
-                  <circle
-                    cx={p.x}
-                    cy={p.y}
-                    r="2.2"
-                    fill={isActive ? 'var(--afterburn)' : 'var(--mach)'}
-                  />
-                  {/* Connector line + label */}
-                  <line
-                    x1={p.x}
-                    y1={p.y}
-                    x2={p.x > 100 ? p.x + 22 : p.x - 22}
-                    y2={p.y}
-                    stroke={isActive ? 'var(--afterburn)' : 'rgba(94,200,255,0.4)'}
-                    strokeWidth="0.5"
-                    strokeDasharray="1 1"
-                  />
-                </g>
-              );
-            })}
-          </svg>
-
-          {/* Hovering labels — absolutely over SVG */}
-          {PARTS.map((p) => {
-            const isActive = active === p.id;
-            const leftSide = p.x < 100;
-            return (
-              <div
-                key={p.id}
-                className="absolute mono text-[9px] pointer-events-none transition-opacity"
-                style={{
-                  left: `${leftSide ? (p.x / 200) * 100 - 8 : (p.x / 200) * 100 + 4}%`,
-                  top: `${(p.y / 300) * 100 - 1}%`,
-                  color: isActive ? 'var(--afterburn)' : 'rgba(238,240,243,0.7)',
-                  textAlign: leftSide ? 'right' : 'left',
-                  opacity: isActive ? 1 : 0.75,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <div className="leading-tight">{p.label}</div>
-                <div className="opacity-50 text-[8px]">{p.code}</div>
               </div>
-            );
-          })}
-        </div>
-
-        {/* RIGHT: Active part detail */}
-        <div className="sticky top-24">
-          <div className="mono text-[9px] text-[var(--bone)]/40 mb-4 flex items-center gap-2">
-            <span className="h-1 w-1 rounded-full bg-[var(--afterburn)]" style={{ animation: 'hud-pulse 1s ease-in-out infinite' }} />
-            {activePart ? 'SYSTEM DETAIL' : 'AWAITING SELECTION'}
+            ))}
           </div>
 
-          {activePart ? (
-            <div key={activePart.id} className="space-y-5" style={{ animation: 'fadein 0.4s ease-out' }}>
-              {/* Image */}
+          {/* CENTER: Airframe diagram */}
+          <div className="relative aspect-[2/3] w-full max-h-[78vh] mx-auto">
+            <div
+              className="absolute inset-[-10%] pointer-events-none"
+              style={{
+                background:
+                  'radial-gradient(ellipse at center, rgba(94,200,255,0.18) 0%, transparent 60%)',
+                filter: 'blur(20px)',
+              }}
+            />
+            <svg viewBox="0 0 200 300" className="relative w-full h-full">
+              <defs>
+                <linearGradient id="anat-body" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#1d222b" />
+                  <stop offset="50%" stopColor="#0d1015" />
+                  <stop offset="100%" stopColor="#05070a" />
+                </linearGradient>
+              </defs>
+
+              <path
+                d="M 100 4
+                   L 108 38 L 115 70 L 135 130 L 190 235 L 190 248
+                   L 125 220 L 128 272 L 142 288 L 142 294
+                   L 100 278 L 58 294 L 58 288 L 72 272 L 75 220
+                   L 10 248 L 10 235 L 65 130 L 85 70 L 92 38 Z"
+                fill="url(#anat-body)"
+                stroke="rgba(94,200,255,0.3)"
+                strokeWidth="0.5"
+              />
+              <path d="M 100 32 L 105 56 L 100 78 L 95 56 Z" fill="rgba(94,200,255,0.25)" />
+              <line x1="100" y1="4" x2="100" y2="278" stroke="rgba(94,200,255,0.15)" strokeDasharray="2 2" strokeWidth="0.4" />
+
+              <g fontSize="3.2" fill="rgba(94,200,255,0.45)">
+                <line x1="3" y1="4" x2="3" y2="278" stroke="rgba(94,200,255,0.2)" strokeWidth="0.3" />
+                <text x="4.5" y="12">0.0</text>
+                <text x="4.5" y="100">5.2M</text>
+                <text x="4.5" y="200">12.8M</text>
+                <text x="4.5" y="275">19.7M</text>
+              </g>
+
+              {PARTS.map((p, i) => (
+                <g key={p.id}>
+                  <circle
+                    ref={(el) => { hotspotOuterRefs.current[i] = el; }}
+                    cx={p.x} cy={p.y} r={5}
+                    fill="none"
+                    stroke="var(--mach)"
+                    strokeWidth="0.8"
+                    opacity={0.25}
+                  />
+                  <circle
+                    ref={(el) => { hotspotInnerRefs.current[i] = el; }}
+                    cx={p.x} cy={p.y} r={1.6}
+                    fill="var(--mach)"
+                  />
+                  <line
+                    ref={(el) => { hotspotLineRefs.current[i] = el; }}
+                    x1={p.x} y1={p.y}
+                    x2={p.x > 100 ? p.x + 22 : p.x - 22} y2={p.y}
+                    stroke="var(--mach)"
+                    strokeWidth="0.5"
+                    strokeDasharray="1 1"
+                    opacity={0.2}
+                  />
+                </g>
+              ))}
+            </svg>
+
+            {PARTS.map((p, i) => {
+              const leftSide = p.x < 100;
+              return (
+                <div
+                  key={p.id}
+                  ref={(el) => { labelRefs.current[i] = el; }}
+                  className="absolute mono text-[9px] pointer-events-none"
+                  style={{
+                    left: `${leftSide ? (p.x / 200) * 100 - 12 : (p.x / 200) * 100 + 4}%`,
+                    top: `${(p.y / 300) * 100 - 1}%`,
+                    color: 'rgba(238,240,243,0.55)',
+                    textAlign: leftSide ? 'right' : 'left',
+                    opacity: 0.5,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <div className="leading-tight">{p.label}</div>
+                  <div className="opacity-50 text-[8px]">{p.code}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* RIGHT: Detail panels (cross-faded) */}
+          <div className="relative h-[78vh]">
+            {PARTS.map((p, i) => (
               <div
-                className="w-full aspect-[4/3] bg-cover bg-center relative overflow-hidden"
+                key={p.id}
+                ref={(el) => { detailRefs.current[i] = el; }}
+                className="absolute inset-0 space-y-5"
                 style={{
-                  backgroundImage: `url(${activePart.image})`,
-                  border: '1px solid rgba(255,91,20,0.3)',
+                  opacity: 0,
+                  willChange: 'transform, opacity',
                 }}
               >
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.8) 100%)' }} />
-                <div className="absolute top-3 left-3 mono text-[9px] text-[var(--afterburn)] flex items-center gap-2">
-                  <span className="h-1 w-1 rounded-full bg-[var(--afterburn)]" style={{ animation: 'hud-pulse 0.9s ease-in-out infinite' }} />
-                  LIVE FEED
-                </div>
-                <div className="absolute bottom-3 right-3 mono text-[9px] text-[var(--bone)]/50">{activePart.code}</div>
-                {/* Corner ticks on image */}
-                <div className="absolute top-2 left-2 h-3 w-3 border-l border-t border-[var(--afterburn)]/60" />
-                <div className="absolute top-2 right-2 h-3 w-3 border-r border-t border-[var(--afterburn)]/60" />
-                <div className="absolute bottom-2 left-2 h-3 w-3 border-l border-b border-[var(--afterburn)]/60" />
-                <div className="absolute bottom-2 right-2 h-3 w-3 border-r border-b border-[var(--afterburn)]/60" />
-              </div>
-
-              {/* Title */}
-              <div>
                 <div
-                  className="display text-[var(--bone)]"
-                  style={{ fontSize: '2.2rem', lineHeight: 1 }}
+                  className="w-full aspect-[4/3] bg-cover bg-center relative overflow-hidden"
+                  style={{
+                    backgroundImage: `url(${p.image})`,
+                    border: '1px solid rgba(255,91,20,0.3)',
+                  }}
                 >
-                  {activePart.label}
-                </div>
-                <div className="mono text-[10px] text-[var(--bone)]/50 mt-2 tracking-[0.25em]">
-                  {activePart.code}
-                </div>
-              </div>
-
-              {/* Description */}
-              <p className="text-[var(--bone)]/70 text-[13px] leading-relaxed">
-                {activePart.desc}
-              </p>
-
-              {/* Specs table */}
-              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/5">
-                {activePart.specs.map((s) => (
-                  <div key={s.k}>
-                    <div className="mono text-[9px] text-[var(--bone)]/40">{s.k}</div>
-                    <div className="mono text-[11px] text-[var(--bone)] mt-1">{s.v}</div>
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: 'linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.85) 100%)',
+                    }}
+                  />
+                  <div className="absolute top-3 left-3 mono text-[9px] text-[var(--afterburn)] flex items-center gap-2">
+                    <span
+                      className="h-1 w-1 rounded-full bg-[var(--afterburn)]"
+                      style={{ animation: 'hud-pulse 0.9s ease-in-out infinite' }}
+                    />
+                    LIVE FEED
                   </div>
-                ))}
-              </div>
+                  <div className="absolute bottom-3 right-3 mono text-[9px] text-[var(--bone)]/55">
+                    {p.code}
+                  </div>
+                  <div className="absolute top-2 left-2 h-3 w-3 border-l border-t border-[var(--afterburn)]/60" />
+                  <div className="absolute top-2 right-2 h-3 w-3 border-r border-t border-[var(--afterburn)]/60" />
+                  <div className="absolute bottom-2 left-2 h-3 w-3 border-l border-b border-[var(--afterburn)]/60" />
+                  <div className="absolute bottom-2 right-2 h-3 w-3 border-r border-b border-[var(--afterburn)]/60" />
+                </div>
 
-              {/* Action buttons */}
-              <div className="flex gap-3 pt-4">
-                <button className="mono text-[9px] px-4 py-2.5 border border-[var(--afterburn)]/50 text-[var(--afterburn)] hover:bg-[var(--afterburn)] hover:text-black transition-all">
-                  TECHNICAL SHEET →
-                </button>
-                <button
-                  onClick={() => setActive(null)}
-                  className="mono text-[9px] px-4 py-2.5 border border-white/10 text-[var(--bone)]/60 hover:border-white/30 hover:text-[var(--bone)] transition-all"
-                >
-                  DESELECT
-                </button>
+                <div>
+                  <div
+                    className="display text-[var(--bone)]"
+                    style={{ fontSize: '2.2rem', lineHeight: 1 }}
+                  >
+                    {p.label}
+                  </div>
+                  <div className="mono text-[10px] text-[var(--bone)]/55 mt-2 tracking-[0.25em]">
+                    {p.code}
+                  </div>
+                </div>
+
+                <p className="text-[var(--bone)]/75 text-[13px] leading-relaxed">{p.desc}</p>
+
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/5">
+                  {p.specs.map((s) => (
+                    <div key={s.k}>
+                      <div className="mono text-[9px] text-[var(--bone)]/45">{s.k}</div>
+                      <div className="mono text-[11px] text-[var(--bone)] mt-1">{s.v}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div
-                className="display text-[var(--bone)]/40"
-                style={{ fontSize: '2.2rem', lineHeight: 1 }}
-              >
-                SELECT <span style={{ color: 'var(--mach)' }}>A SYSTEM</span>
-              </div>
-              <p className="text-[var(--bone)]/50 text-[13px] leading-relaxed">
-                Click any hotspot on the airframe — or choose from the index on
-                the left. Each module is a miniature engineering briefing, from
-                the AESA nose cone to the twin-vectored exhaust.
-              </p>
-              <div className="mono text-[9px] text-[var(--bone)]/40 pt-4 border-t border-white/5">
-                06 SYSTEMS · 04 FLIGHT REGIMES · 01 AIRFRAME
-              </div>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       </div>
-
     </section>
   );
 }

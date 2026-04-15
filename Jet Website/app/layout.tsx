@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import LenisProvider from '@/components/LenisProvider';
+import AtmosphereBackdrop from '@/components/AtmosphereBackdrop';
 import HUD from '@/components/hud/HUD';
 import ChapterNav from '@/components/hud/ChapterNav';
 import Preloader from '@/components/Preloader';
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${mono.variable}`}>
       <body>
         <Preloader />
+        <AtmosphereBackdrop />
         <LenisProvider>{children}</LenisProvider>
         <HUD />
         <ChapterNav />

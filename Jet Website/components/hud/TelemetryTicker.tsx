@@ -1,64 +1,61 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { subscribeScrollProgress } from '@/lib/scrollProgress';
 
-function jitter(base: number, amp: number) {
-  return base + (Math.random() - 0.5) * amp;
-}
+const ITEMS: { k: string; color: string }[] = [
+  { k: 'SPD', color: 'var(--mach)' },
+  { k: 'ALT', color: 'var(--bone)' },
+  { k: 'HDG', color: 'var(--bone)' },
+  { k: 'PTC', color: 'var(--bone)' },
+  { k: 'ROL', color: 'var(--bone)' },
+  { k: 'G', color: 'var(--afterburn)' },
+  { k: 'EGT', color: 'var(--afterburn)' },
+  { k: 'FUEL', color: 'var(--bone)' },
+];
+
+const j = (amp: number) => (Math.random() - 0.5) * amp;
 
 export default function TelemetryTicker() {
-  const [progress, setProgress] = useState(0);
   const [mounted, setMounted] = useState(false);
-  const [tick, setTick] = useState(0);
+  const asideRef = useRef<HTMLElement>(null);
+  const refs = useRef<Record<string, HTMLSpanElement | null>>({});
 
   useEffect(() => {
     setMounted(true);
-    const onScroll = () => {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      if (max <= 0) return;
-      setProgress(Math.max(0, Math.min(1, window.scrollY / max)));
-    };
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    const i = window.setInterval(() => setTick((t) => t + 1), 180);
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      clearInterval(i);
-    };
+    const unsub = subscribeScrollProgress((p) => {
+      if (asideRef.current) {
+        asideRef.current.style.opacity = String(Math.max(0, Math.min(1, (p - 0.05) * 10)));
+      }
+      const alt = Math.floor(p * 62000);
+      const speed = Math.floor(p * 2200 + j(10));
+      const temp = Math.floor(612 - p * 480 + j(3));
+      const fuel = Math.max(12, Math.floor(100 - p * 72));
+      const set = (k: string, v: string, color?: string) => {
+        const el = refs.current[k];
+        if (!el) return;
+        el.textContent = v;
+        if (color) el.style.color = color;
+      };
+      set('SPD', `${speed} KN`);
+      set('ALT', `${alt.toLocaleString()} FT`);
+      set('HDG', `${((p * 240 + 42 + j(1)) % 360).toFixed(1)}°`);
+      set('PTC', `${(p * 18 - 2 + j(0.2)).toFixed(1)}°`);
+      set('ROL', `${j(1.5).toFixed(1)}°`);
+      set('G', `${(1 + p * 7 + j(0.1)).toFixed(2)}`);
+      set('EGT', `${temp}°C`);
+      set('FUEL', `${fuel}%`, fuel < 25 ? 'var(--afterburn)' : 'var(--bone)');
+    });
+    return unsub;
   }, []);
 
   if (!mounted) return null;
 
-  // Fade in after user scrolls past hero (hero has its own side panels)
-  const vis = Math.max(0, Math.min(1, (progress - 0.05) * 10));
-
-  const alt = Math.floor(progress * 62000);
-  const speed = Math.floor(progress * 2200 + jitter(0, 10));
-  const temp = Math.floor(612 - progress * 480 + jitter(0, 3));
-  const fuel = Math.max(12, Math.floor(100 - progress * 72));
-  const gforce = (1 + progress * 7 + jitter(0, 0.1)).toFixed(2);
-  const heading = ((progress * 240 + 42 + jitter(0, 1)) % 360).toFixed(1);
-  const pitch = (progress * 18 - 2 + jitter(0, 0.2)).toFixed(1);
-  const roll = (jitter(0, 1.5)).toFixed(1);
-
-  const items = [
-    { l: 'SPD', v: `${speed} KN`, c: 'var(--mach)' },
-    { l: 'ALT', v: `${alt.toLocaleString()} FT`, c: 'var(--bone)' },
-    { l: 'HDG', v: `${heading}°`, c: 'var(--bone)' },
-    { l: 'PTC', v: `${pitch}°`, c: 'var(--bone)' },
-    { l: 'ROL', v: `${roll}°`, c: 'var(--bone)' },
-    { l: 'G', v: `${gforce}`, c: 'var(--afterburn)' },
-    { l: 'EGT', v: `${temp}°C`, c: 'var(--afterburn)' },
-    { l: 'FUEL', v: `${fuel}%`, c: fuel < 25 ? 'var(--afterburn)' : 'var(--bone)' },
-  ];
-
-  // Suppress unused warning for tick
-  void tick;
-
   return (
     <aside
+      ref={asideRef}
       className="pointer-events-none fixed left-7 top-1/2 -translate-y-1/2 z-40 w-[180px] space-y-2 transition-opacity duration-500"
-      style={{ opacity: vis }}
+      style={{ opacity: 0 }}
     >
       <div className="mono text-[9px] text-[var(--bone)]/40 flex items-center gap-2 mb-3">
         <span
@@ -67,15 +64,21 @@ export default function TelemetryTicker() {
         />
         LIVE TELEMETRY
       </div>
-      {items.map((it) => (
+      {ITEMS.map((it) => (
         <div
-          key={it.l}
+          key={it.k}
           className="flex items-baseline justify-between mono text-[10px] border-l-2 pl-3 py-1"
           style={{ borderColor: 'rgba(255,255,255,0.06)' }}
         >
-          <span className="text-[var(--bone)]/40 text-[9px]">{it.l}</span>
-          <span className="tabular-nums" style={{ color: it.c }}>
-            {it.v}
+          <span className="text-[var(--bone)]/40 text-[9px]">{it.k}</span>
+          <span
+            ref={(el) => {
+              refs.current[it.k] = el;
+            }}
+            className="tabular-nums"
+            style={{ color: it.color }}
+          >
+            —
           </span>
         </div>
       ))}

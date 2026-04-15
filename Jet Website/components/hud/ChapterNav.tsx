@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { subscribeScrollProgress } from '@/lib/scrollProgress';
 
 const CHAPTERS = [
   { id: 'hero', label: 'IGNITION' },
@@ -15,27 +16,52 @@ const CHAPTERS = [
 
 export default function ChapterNav() {
   const [active, setActive] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const onScroll = () => {
-      const vh = window.innerHeight;
-      const center = window.scrollY + vh / 2;
-      let found = 0;
-      CHAPTERS.forEach((c, i) => {
+    let bounds: { top: number; bottom: number }[] = [];
+    const measure = () => {
+      bounds = CHAPTERS.map((c) => {
         const el = document.getElementById(c.id);
-        if (!el) return;
+        if (!el) return { top: 0, bottom: 0 };
         const top = el.offsetTop;
-        const bottom = top + el.offsetHeight;
-        if (center >= top && center < bottom) found = i;
+        return { top, bottom: top + el.offsetHeight };
       });
-      setActive(found);
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      if (max > 0) setProgress(Math.max(0, Math.min(1, window.scrollY / max)));
     };
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    measure();
+    window.addEventListener('resize', measure);
+    // Re-measure once after fonts/images settle
+    const settleTimer = window.setTimeout(measure, 800);
+
+    let lastActive = -1;
+    let lastDim: boolean | null = null;
+    const unsub = subscribeScrollProgress((p, y) => {
+      if (navRef.current) {
+        const dim = p < 0.05;
+        if (dim !== lastDim) {
+          lastDim = dim;
+          navRef.current.style.opacity = dim ? '0.25' : '1';
+        }
+      }
+      const center = y + window.innerHeight / 2;
+      let found = 0;
+      for (let i = 0; i < bounds.length; i++) {
+        if (center >= bounds[i].top && center < bounds[i].bottom) {
+          found = i;
+          break;
+        }
+      }
+      if (found !== lastActive) {
+        lastActive = found;
+        setActive(found);
+      }
+    });
+
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.clearTimeout(settleTimer);
+      unsub();
+    };
   }, []);
 
   const jump = (id: string) => {
@@ -46,13 +72,11 @@ export default function ChapterNav() {
     else window.scrollTo({ top: el.offsetTop, behavior: 'smooth' });
   };
 
-  // Fade to very dim on hero (where the right info panel lives)
-  const vis = progress < 0.05 ? 0.25 : 1;
-
   return (
     <nav
+      ref={navRef}
       className="pointer-events-auto fixed right-7 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-3 transition-opacity duration-500"
-      style={{ opacity: vis }}
+      style={{ opacity: 0.25 }}
     >
       {CHAPTERS.map((c, i) => {
         const isActive = i === active;
@@ -63,9 +87,7 @@ export default function ChapterNav() {
             className="group flex items-center gap-3 mono text-[9px] transition-all"
             style={{ color: isActive ? 'var(--afterburn)' : 'rgba(238,240,243,0.35)' }}
           >
-            <span className="tabular-nums w-4 text-right">
-              {String(i + 1).padStart(2, '0')}
-            </span>
+            <span className="tabular-nums w-4 text-right">{String(i + 1).padStart(2, '0')}</span>
             <span
               className="transition-all"
               style={{
@@ -76,10 +98,7 @@ export default function ChapterNav() {
             />
             <span
               className="overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-300"
-              style={{
-                maxWidth: isActive ? '120px' : '0px',
-                opacity: isActive ? 1 : 0,
-              }}
+              style={{ maxWidth: isActive ? '120px' : '0px', opacity: isActive ? 1 : 0 }}
             >
               {c.label}
             </span>
