@@ -134,10 +134,6 @@ export default function Hero() {
           muted
           playsInline
           preload="auto"
-          style={{ opacity: 0, transition: 'opacity 1.2s ease-out' }}
-          onLoadedData={(e) => {
-            (e.currentTarget as HTMLVideoElement).style.opacity = '1';
-          }}
         />
       </div>
 
