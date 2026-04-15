@@ -1,10 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import LenisProvider from '@/components/LenisProvider';
-import AtmosphereBackdrop from '@/components/AtmosphereBackdrop';
-import HUD from '@/components/hud/HUD';
-import ChapterNav from '@/components/hud/ChapterNav';
-import Preloader from '@/components/Preloader';
 import './globals.css';
 
 const display = Inter({
@@ -22,19 +18,15 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'OWN THE SKY',
-  description: 'A cinematic flight. Scroll to ignite.',
+  title: 'SR-71 BLACKBIRD',
+  description: 'Scroll the legend.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${mono.variable}`}>
       <body>
-        <Preloader />
-        <AtmosphereBackdrop />
         <LenisProvider>{children}</LenisProvider>
-        <HUD />
-        <ChapterNav />
       </body>
     </html>
   );

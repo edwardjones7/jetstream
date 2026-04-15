@@ -24,7 +24,7 @@ body {
   background: var(--void);
   color: var(--bone);
   font-family: var(--font-display), system-ui, sans-serif;
-  overflow-x: hidden;
+  overflow-x: clip;
   overscroll-behavior: none;
 }
 

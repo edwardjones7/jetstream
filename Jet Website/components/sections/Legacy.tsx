@@ -1,119 +1,144 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
+if (typeof window !== 'undefined') gsap.registerPlugin(ScrollTrigger);
+
+const RECORDS: { y: string; t: string }[] = [
+  { y: '1976', t: 'ABSOLUTE SPEED RECORD · 2,193.2 MPH' },
+  { y: '1976', t: 'ABSOLUTE ALTITUDE RECORD · 85,069 FT' },
+  { y: '1974', t: 'NEW YORK → LONDON · 1H 54M' },
+  { y: '1990', t: 'COAST TO COAST · 67M 54S' },
+];
+
 export default function Legacy() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const pathRef = useRef<SVGPathElement>(null);
-  const wordmarkRef = useRef<HTMLDivElement>(null);
-  const ruleRef = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const title = useRef<HTMLDivElement>(null);
+  const subtitle = useRef<HTMLDivElement>(null);
+  const cards = useRef<(HTMLDivElement | null)[]>([]);
+  const cta = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const path = pathRef.current;
-    if (!path) return;
-    const length = path.getTotalLength();
-    path.style.strokeDasharray = `${length}`;
-    path.style.strokeDashoffset = `${length}`;
+    const ctx = gsap.context(() => {
+      gsap.from(title.current, {
+        scrollTrigger: {
+          trigger: title.current,
+          start: 'top 80%',
+          end: 'top 45%',
+          scrub: 0.6,
+        },
+        opacity: 0,
+        y: 50,
+      });
+      gsap.from(subtitle.current, {
+        scrollTrigger: {
+          trigger: subtitle.current,
+          start: 'top 85%',
+          end: 'top 55%',
+          scrub: 0.6,
+        },
+        opacity: 0,
+      });
+      cards.current.forEach((c, i) => {
+        if (!c) return;
+        gsap.from(c, {
+          scrollTrigger: {
+            trigger: c,
+            start: 'top 90%',
+            end: 'top 55%',
+            scrub: 0.6,
+          },
+          opacity: 0,
+          y: 40,
+          delay: i * 0.05,
+        });
+      });
+      gsap.from(cta.current, {
+        scrollTrigger: {
+          trigger: cta.current,
+          start: 'top 85%',
+          end: 'top 50%',
+          scrub: 0.6,
+        },
+        opacity: 0,
+        y: 30,
+      });
+    }, root);
 
-    const st = ScrollTrigger.create({
-      trigger: sectionRef.current,
-      start: 'top 85%',
-      end: 'bottom bottom',
-      scrub: 1,
-      onUpdate: (self) => {
-        const p = self.progress;
-        path.style.strokeDashoffset = String(length * (1 - p));
-        if (wordmarkRef.current) {
-          wordmarkRef.current.style.opacity = String(Math.max(0, (p - 0.5) * 2));
-          wordmarkRef.current.style.transform = `translateY(${(1 - p) * 30}px)`;
-        }
-        if (ruleRef.current) {
-          ruleRef.current.style.opacity = String(Math.max(0, (p - 0.5) * 2));
-          ruleRef.current.style.transform = `scaleX(${Math.max(0, (p - 0.5) * 2)})`;
-        }
-      },
-    });
-
-    return () => st.kill();
+    return () => ctx.revert();
   }, []);
 
   return (
     <section
-      ref={sectionRef}
-      id="legacy"
-      className="relative h-[150vh] w-full overflow-hidden"
+      ref={root}
+      className="relative bg-[var(--void)] py-[25vh] overflow-hidden"
     >
-      <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
-        {/* Contrail path drawing */}
-        <svg
-          viewBox="0 0 1200 700"
-          className="pointer-events-none absolute inset-0 w-full h-full"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <defs>
-            <linearGradient id="trail" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="rgba(255,91,20,0)" />
-              <stop offset="20%" stopColor="rgba(255,91,20,0.8)" />
-              <stop offset="60%" stopColor="rgba(238,240,243,0.9)" />
-              <stop offset="100%" stopColor="rgba(94,200,255,1)" />
-            </linearGradient>
-            <filter id="trailGlow">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <path
-            ref={pathRef}
-            d="M 50 600 Q 300 580 450 450 T 800 250 Q 950 180 1150 120"
-            fill="none"
-            stroke="url(#trail)"
-            strokeWidth="3"
-            strokeLinecap="round"
-            filter="url(#trailGlow)"
-          />
-        </svg>
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse at 50% 10%, rgba(94,200,255,0.08) 0%, transparent 55%), radial-gradient(ellipse at 50% 110%, rgba(255,91,20,0.12) 0%, transparent 55%), #050608',
+        }}
+      />
 
-        {/* Wordmark + CTA */}
-        <div
-          ref={wordmarkRef}
-          className="relative z-10 flex flex-col items-center gap-10 px-8"
-          style={{ opacity: 0 }}
-        >
-          <h2
-            className="display text-center text-[var(--bone)]"
-            style={{
-              fontSize: 'clamp(3rem, 11vw, 12rem)',
-              lineHeight: 0.85,
-              textShadow: '0 4px 80px rgba(0,0,0,0.6)',
-            }}
-          >
-            OWN THE SKY.
-          </h2>
-
-          <div className="mono text-[10px] text-[var(--bone)]/60 text-center max-w-md">
-            NOT A PRODUCT. A POSTURE.<br />
-            FOR THE ONES WHO REFUSE THE GROUND.
+      <div className="relative mx-auto max-w-6xl px-6">
+        <div ref={title} className="text-center mb-6">
+          <div className="mono text-[10px] text-[var(--afterburn)] tracking-[0.4em] mb-4">
+            · THE LEGACY ·
           </div>
+          <h2 className="display text-white text-[clamp(3rem,8vw,7rem)] leading-[0.9]">
+            RECORD
+            <br />
+            <span className="text-[var(--mach)]">UNBROKEN</span>
+          </h2>
+        </div>
 
-          <div
-            ref={ruleRef}
-            style={{
-              width: 'clamp(120px, 22vw, 320px)',
-              height: '1px',
-              background: 'rgba(238,240,243,0.2)',
-              boxShadow: '0 0 12px rgba(238,240,243,0.25)',
-              opacity: 0,
-              transform: 'scaleX(0)',
-              transformOrigin: 'center',
-            }}
-          />
+        <div
+          ref={subtitle}
+          className="mono text-[11px] text-white/50 tracking-[0.28em] text-center mb-20 max-w-2xl mx-auto leading-[1.8]"
+        >
+          RETIRED 1999 · 3,551 FLIGHTS · 53,490 HOURS
+          <br />
+          NONE LOST TO ENEMY FIRE · NONE SURPASSED
+        </div>
 
-          <div className="mono text-[9px] text-[var(--bone)]/30 mt-12">
-            END OF TRANSMISSION · SCROLL COMPLETE
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-20">
+          {RECORDS.map((r, i) => (
+            <div
+              key={r.t}
+              ref={(el) => {
+                cards.current[i] = el;
+              }}
+              className="relative border border-white/10 bg-white/[0.02] p-6 backdrop-blur-sm hover:border-[var(--mach)]/40 transition-colors duration-500 group"
+            >
+              <div className="absolute top-2 left-2 w-3 h-3 border-t border-l border-[var(--mach)]/50" />
+              <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-[var(--mach)]/50" />
+              <div className="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-[var(--mach)]/50" />
+              <div className="absolute bottom-2 right-2 w-3 h-3 border-b border-r border-[var(--mach)]/50" />
+
+              <div className="mono text-[10px] text-[var(--afterburn)] tracking-[0.3em] mb-3">
+                {r.y}
+              </div>
+              <div className="mono text-sm text-white/85 tracking-[0.18em] leading-[1.6]">
+                {r.t}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div ref={cta} className="text-center">
+          <div className="mono text-[10px] text-white/40 tracking-[0.4em] mb-6">
+            MACH 3.3 · CLASSIFIED · 1964 — 1999
+          </div>
+          <div className="display text-white/90 text-[clamp(1.25rem,2.4vw,2rem)] leading-[1.1]">
+            NOTHING HAS FLOWN FASTER SINCE.
+          </div>
+          <div className="mt-12 flex justify-center items-center gap-3 mono text-[9px] text-white/30 tracking-[0.4em]">
+            <span className="h-px w-12 bg-white/20" />
+            END OF TRANSMISSION
+            <span className="h-px w-12 bg-white/20" />
           </div>
         </div>
       </div>
