@@ -36,23 +36,8 @@ export default function Quote() {
   return (
     <section
       ref={root}
-      className="relative bg-[var(--void)] py-[18vh] overflow-hidden"
+      className="relative py-[22vh] overflow-hidden"
     >
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(ellipse at 50% 50%, rgba(255,91,20,0.07) 0%, transparent 55%), linear-gradient(180deg, #050608 0%, #0a0d14 50%, #050608 100%)',
-        }}
-      />
-
-      <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[70vw] max-w-[900px] max-h-[900px] rounded-full"
-        style={{
-          background: 'radial-gradient(circle, rgba(94,200,255,0.05) 0%, transparent 60%)',
-          animation: 'hud-pulse 6s ease-in-out infinite',
-        }}
-      />
-
       <div className="relative mx-auto max-w-4xl px-6 text-center">
         <div
           ref={bar}
